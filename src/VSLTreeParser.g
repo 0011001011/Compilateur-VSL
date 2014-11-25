@@ -100,19 +100,9 @@ param[SymbolTable symTab]
 	;
 
 statement [SymbolTable symTab] returns [Code3a code]
-	: ^(ASSIGN_KW e=expression[symTab] IDENT)
+	: ^(ASSIGN_KW e=expression[symTab] statement_lhs[symTab, $e.expAtt])
 		{
-			if (symTab.lookup($IDENT.text) != null) {
-				Type ty           = Type.INT;
-				Code3a cod        = new Code3a();
-				VarSymbol temp    = new VarSymbol($IDENT.text);
-				ExpAttribute exp1 = new ExpAttribute(ty, cod, temp);
-				code              = Code3aGenerator.genAssign(e, exp1);
-			}
-			else {
-				System.err.println("Erreur : ident " + $IDENT.text + " non declare");
-				System.exit(1);
-			}
+			$code = $statement_lhs.code;
 		}
 	| ^(RETURN_KW expression[symTab])
 		{
@@ -155,6 +145,27 @@ statement [SymbolTable symTab] returns [Code3a code]
 	| code_sequence = block[symTab]
 		{
 			$code = $code_sequence.code;
+		}
+	;
+
+statement_lhs [SymbolTable symTab, ExpAttribute exp] returns [Code3a code]
+	: IDENT
+		{
+			if (symTab.lookup($IDENT.text) != null) {
+				Type ty           = Type.INT;
+				Code3a cod        = new Code3a();
+				VarSymbol temp    = new VarSymbol($IDENT.text);
+				ExpAttribute exp1 = new ExpAttribute(ty, cod, temp);
+				$code             = Code3aGenerator.genAssign(exp, exp1);
+			}
+			else {
+				System.err.println("Erreur : ident " + $IDENT.text + " non declare");
+				System.exit(1);
+			}
+		}
+	| array_elem[symTab, exp]
+		{
+			$code = $array_elem.expAtt.code;
 		}
 	;
 
@@ -232,6 +243,9 @@ primary_exp [SymbolTable symTab] returns [ExpAttribute expAtt]
 				System.exit(1);
 			}
 		}
+    | array_elem[symTab, null]{
+    	$expAtt = $array_elem.expAtt;
+    }
 	;
 
 block [SymbolTable symTab] returns [Code3a code]
@@ -266,6 +280,18 @@ decl_item [SymbolTable symTab] returns [Code3a code]
 				code        = Code3aGenerator.genVar(v);
 			}
 			else {
+				System.err.println("Erreur : ident " + $IDENT.text + " deja declare");
+				System.exit(1);
+			}
+		}
+	| ^(ARDECL IDENT INTEGER)
+		{
+			if (symTab.lookup($IDENT.text) == null) {
+	    		ArrayType t = new ArrayType(Type.INT, Integer.parseInt($INTEGER.text));
+	    		VarSymbol v = new VarSymbol(t, $IDENT.text, symTab.getScope());
+				symTab.insert($IDENT.text, v);
+				$code = Code3aGenerator.genVar(v);
+	    	} else {
 				System.err.println("Erreur : ident " + $IDENT.text + " deja declare");
 				System.exit(1);
 			}
@@ -324,3 +350,18 @@ read_item [SymbolTable symTab] returns [Code3a code]
     	}
 	}
     ;
+
+array_elem[SymbolTable symTab, ExpAttribute exp] returns [ExpAttribute expAtt]
+	: ^(ARELEM IDENT expression[symTab]) {
+		if(exp != null) { // Affectation
+			VarSymbol v = new VarSymbol($IDENT.text);
+			Code3a c = Code3aGenerator.genArrayAssignment(exp, v, $expression.expAtt);
+			$expAtt = new ExpAttribute(Type.INT, c, v);
+		} else {
+			VarSymbol v   = new VarSymbol($IDENT.text);
+			VarSymbol tmp = SymbDistrib.newTemp();
+			Code3a c = Code3aGenerator.genArrayAccess(tmp, v, $expression.expAtt);
+			$expAtt = new ExpAttribute(Type.INT, c, tmp);
+		}
+	}
+	;

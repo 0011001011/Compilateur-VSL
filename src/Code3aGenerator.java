@@ -153,4 +153,21 @@ public class Code3aGenerator {
 		code.append(i);
 		return code;
 	}
+
+	public static Code3a genArrayAssignment(ExpAttribute val, VarSymbol arrayName,
+		ExpAttribute index) {
+		Code3a code = index.code;
+		code.append(val.code);
+		Inst3a i = new Inst3a(Inst3a.TAC.VARTAB, arrayName, index.place, val.place);
+		code.append(i);
+		return code;
+	}
+
+	public static Code3a genArrayAccess(VarSymbol dest, VarSymbol arrayName,
+		ExpAttribute index) {
+		Code3a code = index.code;
+		Inst3a i = new Inst3a(Inst3a.TAC.TABVAR, dest, arrayName, index.place);
+		code.append(i);
+		return code;
+	}
 } // Code3aGenerator ***
