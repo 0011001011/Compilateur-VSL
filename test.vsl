@@ -1,0 +1,32 @@
+PROTO INT roflcopter(k)
+
+FUNC VOID main()
+{
+	// Test de déclaration
+	INT x, y, z
+
+	// Test d'assignation
+	y := 0
+
+	// Test d'assignation d'expression avec variable
+	x := 1 + y
+
+	// Test de condition
+	IF x THEN
+		x := 5
+	ELSE
+		x := 6
+	FI
+
+	z := roflcopter(x)
+
+	PRINT "lololol", x, "roflrofl"
+
+	READ z
+}
+
+
+FUNC INT roflcopter(k)
+{
+	RETURN 1
+}
