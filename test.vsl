@@ -1,4 +1,4 @@
-PROTO INT roflcopter(INT tab[])
+PROTO INT roflcopter(tab[])
 
 FUNC VOID main()
 {
@@ -28,8 +28,7 @@ FUNC VOID main()
 	READ z
 }
 
-
-FUNC INT roflcopter(INT tab[])
+FUNC INT roflcopter(tab[])
 {
         PRINT tab[0]
 	RETURN 1
