@@ -1,9 +1,9 @@
-PROTO INT roflcopter(k)
+PROTO INT roflcopter(INT tab[])
 
 FUNC VOID main()
 {
 	// Test de déclaration
-	INT x, y, z
+	INT x, y, z, a[2]
 
 	// Test d'assignation
 	y := 0
@@ -17,16 +17,20 @@ FUNC VOID main()
 	ELSE
 		x := 6
 	FI
+	
+	a[0] := 1
+	a[1] := roflcopter(a)
 
-	z := roflcopter(x)
+	z := roflcopter(a)
 
-	PRINT "lololol", x, "roflrofl"
+	PRINT "lololol", x, a[1], z, "roflrofl"
 
 	READ z
 }
 
 
-FUNC INT roflcopter(k)
+FUNC INT roflcopter(INT tab[])
 {
+        PRINT tab[0]
 	RETURN 1
 }

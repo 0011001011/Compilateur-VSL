@@ -110,12 +110,16 @@ public class Code3aGenerator {
 	}
 
 	public static Code3a genCall(Code3a code, VarSymbol funcName) {
+                if(code == null)
+                    code = new Code3a();
 		Inst3a i = new Inst3a(Inst3a.TAC.CALL, null, funcName, null);
 		code.append(i);
 		return code;
 	}
 
 	public static Code3a genCallReturn(Code3a code, VarSymbol funcName, VarSymbol varRet) {
+                if(code == null)
+                    code = new Code3a();
 		Inst3a i = new Inst3a(Inst3a.TAC.CALL, varRet, funcName, null);
 		code.append(i);
 		return code;

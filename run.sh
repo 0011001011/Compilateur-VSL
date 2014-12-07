@@ -1,2 +1,2 @@
 #!/bin/sh
-java -cp ./src:../antlr/antlr-3.5.jar VslComp ./test.vsl
+java -cp ./src:../ANTLR/antlr-3.5.jar VslComp $1
