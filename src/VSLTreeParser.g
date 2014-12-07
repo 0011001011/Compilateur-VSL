@@ -24,10 +24,10 @@ unit [SymbolTable ts] returns [Code3a code]
 
 function [SymbolTable symTab] returns [Code3a code]
 	: ^(FUNC_KW type { 
-                    FunctionType t = new FunctionType($type.type_ret, false);	 
-                }
-                    IDENT {symTab.enterScope();} pl=param_list[symTab, t] ^(BODY body=statement[symTab]) {symTab.leaveScope();} )
-		{
+				FunctionType t = new FunctionType($type.type_ret, false);	 
+			}
+				IDENT {symTab.enterScope();} pl=param_list[symTab, t] ^(BODY body=statement[symTab]) {symTab.leaveScope();} )
+			{
 			Operand3a op = symTab.lookup($IDENT.text);
                         LabelSymbol label = new LabelSymbol($IDENT.text);	
 			
@@ -38,12 +38,12 @@ function [SymbolTable symTab] returns [Code3a code]
 			else if(op instanceof FunctionSymbol) {
 				FunctionSymbol fs = (FunctionSymbol)op;
 				if (!((FunctionType)fs.type).prototype) {
-					System.err.println("La fonction " + $IDENT.text + " est déjà déclarée");
+					Errors.redefinedIdentifier($IDENT, $IDENT.text, null);
 					System.exit(1);
 				}
 				
 				if(!fs.type.isCompatible((Type)t)) {
-					System.err.println("La fonction " + $IDENT.text + " n'est pas compatible avec le prototype.");
+					Errors.incompatibleTypes($IDENT, fs.type, t, null);
 					System.exit(1);				
 				}
 				
@@ -59,16 +59,16 @@ function [SymbolTable symTab] returns [Code3a code]
 
 proto [SymbolTable symTab]
 	: ^(PROTO_KW type { 
-                    FunctionType t = new FunctionType($type.type_ret, true);	 
-                } IDENT {symTab.enterScope();} pl=param_list[symTab, t] {symTab.leaveScope();})
-		{
+				FunctionType t = new FunctionType($type.type_ret, true);	 
+			} IDENT {symTab.enterScope();} pl=param_list[symTab, t] {symTab.leaveScope();})
+			{
 			if(symTab.lookup($IDENT.text) == null) {
 				LabelSymbol label = new LabelSymbol($IDENT.text);
 				FunctionSymbol fs = new FunctionSymbol(label, t);
 				symTab.insert($IDENT.text, fs);
 			}
 			else {
-				System.err.println("La fonction " + $IDENT.text + " est déjà déclarée.");
+				Errors.redefinedIdentifier($IDENT, $IDENT.text, null);
 				System.exit(1);
 			}
 		}
@@ -143,12 +143,12 @@ statement [SymbolTable symTab] returns [Code3a code]
 					$code = Code3aGenerator.genCall($argument_list.code, vs);
 				}
 				else {
-					System.err.println("Erreur : fonction " + $IDENT.text + " non declare.");
+					Errors.unknownIdentifier($IDENT, $IDENT.text, null);
 					System.exit(1);
 				}
 				
 				if(!fs.type.isCompatible((Type)t)) {
-					System.err.println("Erreur : fonction " + $IDENT.text + " non compatible avec la définition.");
+					Errors.incompatibleTypes($IDENT, fs.type, t, null);
 					System.exit(1);				
 				}
 			}
@@ -168,27 +168,32 @@ statement [SymbolTable symTab] returns [Code3a code]
 statement_lhs [SymbolTable symTab, ExpAttribute exp] returns [Code3a code]
 	: IDENT
 		{
-                        Operand3a op = symTab.lookup($IDENT.text);
+			Operand3a op = symTab.lookup($IDENT.text);
 			if (op != null) {
-                                if(!(exp.type instanceof ArrayType) && !(op.type instanceof ArrayType)) {
-                                    Type ty           = Type.INT;
-                                    Code3a cod        = new Code3a();
-                                    VarSymbol temp    = new VarSymbol($IDENT.text);
-                                    ExpAttribute exp1 = new ExpAttribute(ty, cod, temp);
-                                    $code             = Code3aGenerator.genAssign(exp, exp1);
-                                } else {
-                                    System.err.println("Erreur : assignation de mauvais types.");
-                                    System.exit(1);
-                                }
+				if(exp.type instanceof ArrayType) {
+					Errors.incompatibleTypes($IDENT, Type.INT, exp.type, null);
+					System.exit(1);
+				}
+				
+				if(op.type instanceof ArrayType){
+					Errors.incompatibleTypes($IDENT, Type.INT, op.type, null);
+					System.exit(1);
+				}
+				
+				Type ty           = Type.INT;
+				Code3a cod        = new Code3a();
+				VarSymbol temp    = new VarSymbol($IDENT.text);
+				ExpAttribute exp1 = new ExpAttribute(ty, cod, temp);
+				$code             = Code3aGenerator.genAssign(exp, exp1);
 			}
 			else {
-				System.err.println("Erreur : ident " + $IDENT.text + " non declare");
+				Errors.unknownIdentifier($IDENT, $IDENT.text, null);
 				System.exit(1);
 			}
 		}
 	| array_elem[symTab, exp]
 		{
-                        $code = $array_elem.expAtt.code;
+			$code = $array_elem.expAtt.code;
 		}
 	;
 
@@ -240,7 +245,7 @@ primary_exp [SymbolTable symTab] returns [ExpAttribute expAtt]
 				expAtt = new ExpAttribute(id.type, new Code3a(), id);
 			}
 			else {
-				System.err.println("Erreur : ident " + $IDENT.text + " non declare");
+				Errors.unknownIdentifier($IDENT, $IDENT.text, null);
 				System.exit(1);
 			}
 		}
@@ -257,11 +262,11 @@ primary_exp [SymbolTable symTab] returns [ExpAttribute expAtt]
 					expAtt = new ExpAttribute(new FunctionType(fs.type), code, temp);
 				}
 				else {
-					System.err.println("Erreur : types de retour différents entre la déclaration et la définition de la fonction " + $IDENT.text);
+					Errors.incompatibleTypes($IDENT, Type.INT, ((FunctionType)fs.type).getReturnType(), null);
 					System.exit(1);
 				}
 			} else {
-				System.err.println("Erreur : fonction " + $IDENT.text + " non declaree");
+				Errors.unknownIdentifier($IDENT, $IDENT.text, null);
 				System.exit(1);
 			}
 		}
@@ -297,16 +302,30 @@ declaration [SymbolTable symTab] returns [Code3a code]
 decl_item [SymbolTable symTab] returns [Code3a code]
 	: IDENT
 		{
-                        VarSymbol v = new VarSymbol(Type.INT, $IDENT.text, symTab.getScope());
-                        symTab.insert($IDENT.text, v);
-                        code = Code3aGenerator.genVar(v);
+			VarSymbol vOld = (VarSymbol)symTab.lookup($IDENT.text);
+			
+			if(vOld != null && vOld.getScope() == symTab.getScope()) {
+				Errors.redefinedIdentifier($IDENT, $IDENT.text, null);
+				System.exit(1);
+			}
+			
+			VarSymbol v = new VarSymbol(Type.INT, $IDENT.text, symTab.getScope());
+			symTab.insert($IDENT.text, v);
+			code = Code3aGenerator.genVar(v);
 		}
 	| ^(ARDECL IDENT INTEGER)
 		{
-	    		ArrayType t = new ArrayType(Type.INT, Integer.parseInt($INTEGER.text));
-	    		VarSymbol v = new VarSymbol(t, $IDENT.text, symTab.getScope());
-                        symTab.insert($IDENT.text, v);
-                        $code = Code3aGenerator.genVar(v);
+			VarSymbol vOld = (VarSymbol)symTab.lookup($IDENT.text);
+			
+			if(vOld != null && vOld.getScope() == symTab.getScope()) {
+				Errors.redefinedIdentifier($IDENT, $IDENT.text, null);
+				System.exit(1);
+			}
+			
+			ArrayType t = new ArrayType(Type.INT, Integer.parseInt($INTEGER.text));
+			VarSymbol v = new VarSymbol(t, $IDENT.text, symTab.getScope());
+			symTab.insert($IDENT.text, v);
+			$code = Code3aGenerator.genVar(v);
 		}
 	;
 
@@ -321,7 +340,7 @@ argument_list [SymbolTable symTab, FunctionType t] returns [Code3a code]
 		{
 			$code = Code3aGenerator.genFuncArguments($expression.expAtt);
 			if(t != null)
-                            t.extend($expression.expAtt.place.type);
+				t.extend($expression.expAtt.place.type);
 		}
 	)*
 	;
@@ -359,8 +378,8 @@ read_item [SymbolTable symTab] returns [Code3a code]
     	if(v != null) {
     		$code = Code3aGenerator.genRead(v);
     	} else {
-                System.err.println("Erreur : ident " + $IDENT.text + " non declaré");
-                System.exit(1);
+			Errors.unknownIdentifier($IDENT, $IDENT.text, null);
+			System.exit(1);
     	}
 	}
 	| array_elem[symTab, null] {
