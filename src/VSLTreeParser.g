@@ -28,8 +28,9 @@ function [SymbolTable symTab] returns [Code3a code]
 			}
 				IDENT {symTab.enterScope();} pl=param_list[symTab, t] ^(BODY body=statement[symTab]) {symTab.leaveScope();} )
 			{
+			
 			Operand3a op = symTab.lookup($IDENT.text);
-                        LabelSymbol label = new LabelSymbol($IDENT.text);	
+			LabelSymbol label = new LabelSymbol($IDENT.text);	
 			
 			if (op == null) { // pas de proto déclaré
 				FunctionSymbol fs = new FunctionSymbol(label, t);
@@ -118,6 +119,11 @@ statement [SymbolTable symTab] returns [Code3a code]
 		}
 	| ^(RETURN_KW expression[symTab])
 		{
+			if($expression.expAtt.type != Type.INT) {
+				Errors.incompatibleTypes($RETURN_KW, Type.INT, $expression.expAtt.type, null);
+				System.exit(1);
+			}
+			
 			$code = Code3aGenerator.genReturn($expression.expAtt);
 		}
 	| ^(IF_KW if_cond = expression[symTab] if_st=statement[symTab] (else_st=statement[symTab])?)
@@ -339,8 +345,12 @@ argument_list [SymbolTable symTab, FunctionType t] returns [Code3a code]
 	: (expression[symTab]
 		{
 			$code = Code3aGenerator.genFuncArguments($expression.expAtt);
-			if(t != null)
-				t.extend($expression.expAtt.place.type);
+			if(t != null) {
+				if($expression.expAtt.place.type == Type.I_CONST) // isCompatible will fail if we don't do this
+					t.extend(Type.INT);
+				else
+					t.extend($expression.expAtt.place.type);
+			}
 		}
 	)*
 	;
