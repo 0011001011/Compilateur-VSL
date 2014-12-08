@@ -1,5 +1,6 @@
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintStream;
 
 import org.antlr.runtime.ANTLRFileStream;
 import org.antlr.runtime.CommonTokenStream;
@@ -69,18 +70,18 @@ public class VslComp {
 				code.print();
 				// We prepare the MIPS code generator, which will compile
 				// the three-address code into MIPS assembly.
-				//MIPSCodeGenerator cg = new MIPSCodeGenerator(System.out);
+				MIPSCodeGenerator cg = new MIPSCodeGenerator(new PrintStream("file.s"));
 
 				// NOTE: This call to addStubMain adds the header and
 				// footer for the main function.
 				// This allows the program to be run using the NachOS
 				// emulator.
 				// This function must not be present in the final version.
-				//code = cg.addStubMain(code);
+				code = cg.addStubMain(code);
 
 				// Generates the actual MIPS code, printing it to the
 				// stream chosen previously (by default, System.out).
-				//cg.genCode(code);
+				cg.genCode(code);
 				// The rest of the main function are standard error handlers.
 			} catch (Exception e) {
 				System.err.println(e.getMessage());
